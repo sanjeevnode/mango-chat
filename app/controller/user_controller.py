@@ -16,6 +16,9 @@ async def get_user(db: Session):
     
 async def create_user(user_data: UserRequest, db: Session):
     try:
+        user_exists = db.query(User).filter(User.username==user_data.username).first()
+        if user_exists:
+            return AppResponse(status=400, message="Username already exists").to_dict()
         # Hash the password
         hashed_password = bcrypt.hashpw(user_data.password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
         

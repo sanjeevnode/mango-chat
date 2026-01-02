@@ -14,6 +14,6 @@ async def login(user: UserRequest, db: Session = Depends(get_db)):
     return await authenticate_user(user.username, user.password, db)
 
 
-@auth_router.post("/register", status_code=201)
+@auth_router.post("/register")
 async def create_new_user(user: UserRequest, db: Session = Depends(get_db)):
     return await create_user(user, db)
