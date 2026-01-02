@@ -2,6 +2,7 @@ from sqlalchemy.orm import Session
 from app.models.user import User
 from app.schemas.response_schema import AppResponse
 from app.schemas.user_schema import UserResponse, UserRequest
+from app.services.jwt_service import create_access_token
 import bcrypt
 from fastapi import status
 
@@ -43,7 +44,11 @@ async def authenticate_user(username: str, password: str, db: Session):
     try:
         user = db.query(User).filter(User.username==username).first()
         if user and bcrypt.checkpw(password.encode('utf-8'), user.password.encode('utf-8')):
-            return AppResponse(status=status.HTTP_200_OK, data=UserResponse.model_validate(user).model_dump(mode='json'), message="Authentication successful").send()
+            token = create_access_token({"id": user.id, "username": user.username})
+            return AppResponse(status=status.HTTP_200_OK, data={
+                "access_token": token,
+                "token_type": "bearer"
+            }, message="Authentication successful").send()
         else:
             return AppResponse(status=status.HTTP_401_UNAUTHORIZED, message="Invalid username or password").send()
     except Exception as e:
