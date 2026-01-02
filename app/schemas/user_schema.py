@@ -2,7 +2,7 @@ from pydantic import BaseModel
 from datetime import datetime
 
 
-class UserCreate(BaseModel):
+class UserRequest(BaseModel):
     username: str
     password: str
 

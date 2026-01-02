@@ -1,7 +1,7 @@
 from sqlalchemy.orm import Session
 from app.models.user import User
 from app.schemas.response_schema import AppResponse
-from app.schemas.user_schema import UserResponse, UserCreate
+from app.schemas.user_schema import UserResponse, UserRequest
 import bcrypt
 
 
@@ -14,10 +14,10 @@ async def get_user(db: Session):
         return AppResponse(status=500, message=str(e)).to_dict()
     
     
-async def create_user(user_data: UserCreate, db: Session):
+async def create_user(user_data: UserRequest, db: Session):
     try:
         # Hash the password
-        hashed_password = bcrypt.hashpw(user_data.password.encode('utf-8'), bcrypt.gensalt())
+        hashed_password = bcrypt.hashpw(user_data.password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
         
         # Create new user
         new_user = User(
@@ -33,5 +33,16 @@ async def create_user(user_data: UserCreate, db: Session):
     except Exception as e:
         db.rollback()
         return AppResponse(status=500, message=str(e)).to_dict()
+    except Exception as e:
+        return AppResponse(status=500, message=str(e)).to_dict()
+    
+    
+async def authenticate_user(username: str, password: str, db: Session):
+    try:
+        user = db.query(User).filter(User.username==username).first()
+        if user and bcrypt.checkpw(password.encode('utf-8'), user.password.encode('utf-8')):
+            return AppResponse(status=200, data=UserResponse.model_validate(user).model_dump(), message="Authentication successful").to_dict()
+        else:
+            return AppResponse(status=401, message="Invalid username or password").to_dict()
     except Exception as e:
         return AppResponse(status=500, message=str(e)).to_dict()
