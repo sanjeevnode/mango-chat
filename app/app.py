@@ -4,7 +4,7 @@ from app.router.auth_router import auth_router
 
 
 app = FastAPI(
-    title="Mango Chat",
+    title="Mango Chat 🥭",
     description="Peer to peer chat application",
 )
 
