@@ -1,8 +1,10 @@
 from typing import List, Optional
 from sqlalchemy import func
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, aliased
 from app.models.channel import Channel
 from app.models.user_channel import UserChannel
+from app.models.message import Message
+from app.models.user import User
 from app.schemas.response_schema import AppResponse
 from app.services.database import get_db
 from fastapi import status
@@ -76,3 +78,61 @@ async def get_or_create_channel_for_users(users: List[int], db: Session) -> AppR
             status=status.HTTP_500_INTERNAL_SERVER_ERROR,
             message=str(e)
         )
+
+
+# Get channels for a user
+async def get_channels_for_user(user_id: int, db: Session) -> AppResponse:
+    try:
+        UC_OTHER = aliased(UserChannel)
+
+        last_message_subq = (
+            db.query(
+                Message.channel_id,
+                func.max(Message.created_at).label("last_message_time"),
+            )
+            .group_by(Message.channel_id)
+            .subquery()
+        )
+
+        results = (
+            db.query(
+                Channel.id.label("channel_id"),
+                User.username.label("other_username"),
+                Message.content.label("last_message"),
+                Message.created_at.label("last_message_time"),
+            )
+            .join(UserChannel, UserChannel.channel_id == Channel.id)
+            .filter(UserChannel.user_id == user_id)
+            .join(
+                UC_OTHER,
+                (UC_OTHER.channel_id == Channel.id) & (UC_OTHER.user_id != user_id),
+            )
+            .join(User, User.id == UC_OTHER.user_id)
+            .outerjoin(last_message_subq, last_message_subq.c.channel_id == Channel.id)
+            .outerjoin(
+                Message,
+                (Message.channel_id == Channel.id)
+                & (Message.created_at == last_message_subq.c.last_message_time),
+            )
+            .order_by((Message.created_at == None), Message.created_at.desc())
+            .all()
+        )
+
+        data = [
+            {
+                "channel_id": row.channel_id,
+                "username": row.other_username,
+                "last_message": row.last_message,
+                "last_message_time": row.last_message_time,
+            }
+            for row in results
+        ]
+
+        return AppResponse(
+            status=status.HTTP_200_OK,
+            data=data,
+            message="Channels retrieved successfully",
+        )
+
+    except Exception as e:
+        return AppResponse(status=status.HTTP_500_INTERNAL_SERVER_ERROR, message=str(e))
