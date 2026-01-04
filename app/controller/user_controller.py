@@ -53,3 +53,25 @@ async def authenticate_user(username: str, password: str, db: Session):
             return AppResponse(status=status.HTTP_401_UNAUTHORIZED, message="Invalid username or password").send()
     except Exception as e:
         return AppResponse(status=status.HTTP_500_INTERNAL_SERVER_ERROR, message=str(e)).send()
+    
+
+# Get user by ID
+async def get_user_by_id(user_id: int, db: Session):
+    try:
+        user = db.query(User).filter(User.id == user_id).first()
+        if user:
+            return AppResponse(status=status.HTTP_200_OK, data=UserResponse.model_validate(user).model_dump(mode='json'), message="User retrieved successfully").send()
+        else:
+            return AppResponse(status=status.HTTP_404_NOT_FOUND, message="User not found").send()
+    except Exception as e:
+        return AppResponse(status=status.HTTP_500_INTERNAL_SERVER_ERROR, message=str(e)).send()
+    
+
+# Search users by username
+async def search_users_by_username(username: str, db: Session):
+    try:
+        users = db.query(User).filter(User.username.ilike(f"%{username}%")).all()
+        user_res = [UserResponse.model_validate(user).model_dump(mode='json') for user in users]
+        return AppResponse(status=status.HTTP_200_OK, data=user_res, message="Users retrieved successfully").send()
+    except Exception as e:
+        return AppResponse(status=status.HTTP_500_INTERNAL_SERVER_ERROR, message=str(e)).send()
