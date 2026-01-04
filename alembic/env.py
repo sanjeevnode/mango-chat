@@ -14,6 +14,9 @@ load_dotenv()
 from app.services.database import Base
 from app.models.user import User
 from app.models.message import Message
+from app.models.channel import Channel
+from app.models.user_channel import UserChannel
+
 
 
 # this is the Alembic Config object, which provides
