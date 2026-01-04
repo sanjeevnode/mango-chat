@@ -11,7 +11,10 @@ from dotenv import load_dotenv
 load_dotenv()
 
 # Import all models so Alembic can detect them
-from app.models.user import Base
+from app.services.database import Base
+from app.models.user import User
+from app.models.message import Message
+
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.
