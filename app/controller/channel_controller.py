@@ -97,7 +97,8 @@ async def get_channels_for_user(user_id: int, db: Session) -> AppResponse:
         results = (
             db.query(
                 Channel.id.label("channel_id"),
-                User.username.label("other_username"),
+                User.username.label("username"),
+                User.id.label("user_id"),
                 Message.content.label("last_message"),
                 Message.created_at.label("last_message_time"),
             )
@@ -121,7 +122,8 @@ async def get_channels_for_user(user_id: int, db: Session) -> AppResponse:
         data = [
             {
                 "channel_id": row.channel_id,
-                "username": row.other_username,
+                "username": row.username,
+                "user_id": row.user_id,
                 "last_message": row.last_message,
                 "last_message_time": row.last_message_time,
             }
